@@ -270,7 +270,7 @@ function openModal(i) {
     ? `<a class="btn-secondary" href="https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=${t.vin}" target="_blank">Carfax report</a>`
     : '';
   document.getElementById('modal-actions').innerHTML = hasPics
-    ? `<a class="btn-primary" href="${t.pics}" target="_blank">📷 View all photos</a>${carfax}`
+    ? `<a class="btn-primary" href="${t.pics}" target="_self">📷 View all photos</a>${carfax}`
     : `<span class="btn-primary btn-disabled">No photos yet</span>${carfax}`;
 
   document.getElementById('overlay').classList.add('open');
