@@ -174,9 +174,8 @@ function noImgHTML() {
 function getStatus(statut) {
   if (!statut) return { key:'available', label:'Available', cls:'pill-green' };
   const s = statut.toUpperCase().trim();
-  if (s === 'READY' || s === 'BOND RELEASED')    return { key:'available', label:'Ready now',    cls:'pill-green' };
-  if (s === 'IN TRANSIT')                         return { key:'transit',   label:'In transit',   cls:'pill-amber' };
-  // Everything else (RELEASE APRIL Xth, etc.)
+  if (s.startsWith('READY') || s.startsWith('BOND RELEASED')) return { key:'available', label:statut, cls:'pill-green' };
+  if (s.startsWith('IN TRANSIT'))                              return { key:'transit',   label:statut, cls:'pill-amber' };
   return { key:'pending', label:statut, cls:'pill-blue' };
 }
 
