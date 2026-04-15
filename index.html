@@ -171,12 +171,13 @@ function noImgHTML() {
 }
 
 // Reads STATUT column directly
-function getStatus(statut) {
+function getStatus(statut, location) {
   if (!statut) return { key:'available', label:'Available', cls:'pill-green' };
+  const label = location ? `${statut} - ${location}` : statut;
   const s = statut.toUpperCase().trim();
-  if (s.startsWith('READY') || s.startsWith('BOND RELEASED')) return { key:'available', label:statut, cls:'pill-green' };
-  if (s.startsWith('IN TRANSIT'))                              return { key:'transit',   label:statut, cls:'pill-amber' };
-  return { key:'pending', label:statut, cls:'pill-blue' };
+  if (s.startsWith('READY') || s.startsWith('BOND RELEASED')) return { key:'available', label, cls:'pill-green' };
+  if (s.startsWith('IN TRANSIT'))                              return { key:'transit',   label, cls:'pill-amber' };
+  return { key:'pending', label, cls:'pill-blue' };
 }
 
 function imgUrl(cell) {
@@ -205,7 +206,7 @@ function parseSpecs(notes) {
 }
 
 function cardHTML(t, i) {
-  const st = getStatus(t.statut);
+  const st = getStatus(t.statut, t.location);
   const im = imgUrl(t.primePic);
   const sp = parseSpecs(t.notes);
   const imgPart = im
@@ -233,7 +234,7 @@ function cardHTML(t, i) {
 
 function openModal(i) {
   const t  = allTrucks[i];
-  const st = getStatus(t.statut);
+  const st = getStatus(t.statut, t.location);
   const im = imgUrl(t.primePic);
   const sp = parseSpecs(t.notes);
   const hasPics = t.pics && /^https?:\/\//i.test(t.pics);
@@ -308,7 +309,7 @@ function applyFilter(f, btn) {
   activeFilter = f;
   document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  render(f==='all' ? allTrucks : allTrucks.filter(t=>getStatus(t.statut).key===f));
+  render(f==='all' ? allTrucks : allTrucks.filter(t=>getStatus(t.statut, t.location).key===f));
 }
 
 async function loadData() {
@@ -344,7 +345,7 @@ async function loadData() {
 
     render(activeFilter==='all'
       ? allTrucks
-      : allTrucks.filter(t=>getStatus(t.statut).key===activeFilter));
+      : allTrucks.filter(t=>getStatus(t.statut, t.location).key===activeFilter));
 
   } catch(e) {
     document.getElementById('content').innerHTML =
