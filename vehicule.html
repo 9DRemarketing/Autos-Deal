@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BSM Enterprise — Vehicle Detail</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #0d0d0d;
+    --white: #fafaf8;
+    --gray-100: #f2f0eb;
+    --gray-200: #e2dfd8;
+    --gray-400: #a09d96;
+    --gray-600: #6b6864;
+    --accent: #c8933a;
+    --accent-light: #f5e8d0;
+    --green: #2d6a4f;
+    --green-light: #d8f3dc;
+    --red: #9b2335;
+    --red-light: #fce4e4;
+    --amber-light: #fff3cd;
+    --amber: #856404;
+    --radius: 4px;
+    --radius-lg: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--white);
+    color: var(--black);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* NAV */
+  nav {
+    border-bottom: 1px solid var(--gray-200);
+    padding: 0 24px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--white);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .nav-brand {
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: .02em;
+    text-decoration: none;
+    color: var(--black);
+  }
+  .nav-brand span { color: var(--accent); }
+  .nav-back {
+    font-size: 13px;
+    color: var(--gray-600);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .nav-back:hover { color: var(--black); }
+
+  /* LAYOUT */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px 24px 80px;
+  }
+
+  /* LOADING / ERROR */
+  .state-msg {
+    text-align: center;
+    padding: 80px 24px;
+    color: var(--gray-400);
+    font-size: 14px;
+  }
+  .state-msg .icon { font-size: 32px; margin-bottom: 12px; }
+
+  /* HERO IMAGE */
+  .hero {
+    width: 100%;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    border-radius: var(--radius-lg);
+    background: var(--gray-100);
+    display: block;
+    margin-bottom: 28px;
+  }
+  .hero-placeholder {
+    width: 100%;
+    aspect-ratio: 16/9;
+    border-radius: var(--radius-lg);
+    background: var(--gray-100);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gray-400);
+    font-size: 13px;
+    margin-bottom: 28px;
+  }
+
+  /* STATUS BADGE */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 99px;
+  }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .badge-green { background: var(--green-light); color: var(--green); }
+  .badge-green .badge-dot { background: var(--green); }
+  .badge-amber { background: var(--amber-light); color: var(--amber); }
+  .badge-amber .badge-dot { background: var(--amber); }
+  .badge-red { background: var(--red-light); color: var(--red); }
+  .badge-red .badge-dot { background: var(--red); }
+  .badge-gray { background: var(--gray-100); color: var(--gray-600); }
+  .badge-gray .badge-dot { background: var(--gray-400); }
+
+  /* HEADER BLOCK */
+  .vehicle-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 12px 0 24px;
+    flex-wrap: wrap;
+  }
+  .vehicle-title {
+    font-size: 26px;
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -.01em;
+  }
+  .vehicle-year {
+    font-size: 26px;
+    font-weight: 300;
+    color: var(--gray-400);
+  }
+  .price-block { text-align: right; flex-shrink: 0; }
+  .price-usd {
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--black);
+    letter-spacing: -.02em;
+  }
+  .price-note {
+    font-size: 11px;
+    color: var(--gray-400);
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+
+  /* DIVIDER */
+  hr { border: none; border-top: 1px solid var(--gray-200); margin: 24px 0; }
+
+  /* SPECS GRID */
+  .specs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 1px;
+    background: var(--gray-200);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+  .spec-cell {
+    background: var(--white);
+    padding: 16px;
+  }
+  .spec-label {
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--gray-400);
+    margin-bottom: 5px;
+  }
+  .spec-value {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--black);
+  }
+
+  /* VIN */
+  .vin-block {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--gray-100);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    margin-bottom: 28px;
+  }
+  .vin-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--gray-400);
+    flex-shrink: 0;
+  }
+  .vin-code {
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    color: var(--black);
+    letter-spacing: .08em;
+    flex: 1;
+  }
+  .vin-copy {
+    font-size: 12px;
+    padding: 5px 12px;
+    border: 1px solid var(--gray-200);
+    border-radius: 99px;
+    background: var(--white);
+    cursor: pointer;
+    color: var(--gray-600);
+    transition: all .15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .vin-copy:hover { border-color: var(--black); color: var(--black); }
+
+  /* NOTES */
+  .notes-block {
+    margin-bottom: 28px;
+  }
+  .section-label {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--gray-400);
+    margin-bottom: 10px;
+  }
+  .notes-text {
+    font-size: 14px;
+    color: var(--gray-600);
+    line-height: 1.7;
+    white-space: pre-line;
+  }
+  .notes-tag {
+    display: inline-block;
+    background: var(--gray-100);
+    border-radius: 99px;
+    padding: 3px 10px;
+    font-size: 12px;
+    color: var(--gray-600);
+    margin: 3px 3px 3px 0;
+  }
+
+  /* LOCATION */
+  .location-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--gray-600);
+    margin-bottom: 28px;
+  }
+  .location-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+
+  /* ACTIONS */
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .btn {
+    padding: 14px;
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all .15s;
+    border: 1px solid transparent;
+  }
+  .btn-primary {
+    background: var(--black);
+    color: var(--white);
+  }
+  .btn-primary:hover { background: #2a2a2a; }
+  .btn-outline {
+    background: var(--white);
+    color: var(--black);
+    border-color: var(--gray-200);
+  }
+  .btn-outline:hover { border-color: var(--black); }
+  .btn-full {
+    grid-column: 1 / -1;
+    background: #25d366;
+    color: #fff;
+  }
+  .btn-full:hover { background: #1ebe5a; }
+
+  /* FOOTER SELLER */
+  .seller-strip {
+    border-top: 1px solid var(--gray-200);
+    padding-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .seller-avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--black);
+    color: var(--white);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 500;
+    flex-shrink: 0;
+  }
+  .seller-name { font-size: 14px; font-weight: 500; }
+  .seller-sub { font-size: 12px; color: var(--gray-400); }
+
+  @media (max-width: 560px) {
+    .vehicle-title { font-size: 20px; }
+    .vehicle-year { font-size: 20px; }
+    .price-usd { font-size: 22px; }
+    .actions { grid-template-columns: 1fr; }
+    .btn-full { grid-column: auto; }
+    .container { padding: 20px 16px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html">Autos <span>Deal</span></a>
+  <a class="nav-back" href="index.html">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    All units
+  </a>
+</nav>
+
+<div class="container">
+  <div id="content">
+    <div class="state-msg">
+      <div class="icon">⟳</div>
+      Loading vehicle…
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── CONFIG — update SHEET_ID with your Google Sheet ID ───────────────────────
+const SHEET_ID = 'YOUR_GOOGLE_SHEET_ID';
+const SHEET_NAME = 'Available units'; // tab name in your Sheet
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}`;
+
+// WhatsApp number (with country code, no +)
+const WHATSAPP_NUMBER = '15141234567'; // ← update with your number
+
+// ─── STATUS → badge mapping ───────────────────────────────────────────────────
+function getBadge(statut) {
+  const s = (statut || '').toLowerCase();
+  if (s.includes('transit')) return { cls: 'badge-amber', label: 'In transit' };
+  if (s.includes('bond released') || s.includes('ready')) return { cls: 'badge-green', label: 'Ready now' };
+  if (s.includes('dot hold') || s.includes('hold')) return { cls: 'badge-red', label: 'DOT Hold' };
+  if (s.includes('new arrival')) return { cls: 'badge-amber', label: 'New arrival · In transit' };
+  return { cls: 'badge-gray', label: statut };
+}
+
+// ─── PARSE NOTES into tags ────────────────────────────────────────────────────
+function parseTags(notes) {
+  if (!notes) return [];
+  return notes.split('\n').map(l => l.replace(/"/g, '').trim()).filter(Boolean);
+}
+
+// ─── COPY VIN ─────────────────────────────────────────────────────────────────
+function copyVIN(vin) {
+  navigator.clipboard.writeText(vin).then(() => {
+    const btn = document.getElementById('vin-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1500);
+  });
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function render(v) {
+  const badge = getBadge(v.statut);
+  const tags = parseTags(v.notes);
+  const price = v.price ? v.price.replace(/\.00$/, '') : '—';
+  const miles = v.miles ? Number(v.miles).toLocaleString() + ' mi' : '—';
+  const hasPhoto = v.prime_pic && v.prime_pic.startsWith('http');
+  const waText = encodeURIComponent(`Hi BSM Enterprise! I'm interested in the ${v.year} ${v.unit} — VIN ${v.vin}. Price: ${price}`);
+  const waLink = `https://wa.me/${WHATSAPP_NUMBER}?text=${waText}`;
+  const picsLink = v.pics || null;
+
+  document.title = `${v.year} ${v.unit} — BSM Enterprise`;
+
+  document.getElementById('content').innerHTML = `
+    ${hasPhoto
+      ? `<img class="hero" src="${v.prime_pic}" alt="${v.year} ${v.unit}" onerror="this.style.display='none'">`
+      : `<div class="hero-placeholder">No photo available</div>`
+    }
+
+    <span class="badge ${badge.cls}"><span class="badge-dot"></span>${badge.label}</span>
+
+    <div class="vehicle-header">
+      <div>
+        <div class="vehicle-title">
+          <span class="vehicle-year">${v.year}</span> ${v.unit}
+        </div>
+        <div class="location-row" style="margin:6px 0 0;">
+          <span class="location-dot"></span>
+          ${v.location || '—'}
+        </div>
+      </div>
+      <div class="price-block">
+        <div class="price-usd">${price}</div>
+        <div class="price-note">USD · excl. transport</div>
+      </div>
+    </div>
+
+    <div class="specs-grid">
+      <div class="spec-cell">
+        <div class="spec-label">Mileage</div>
+        <div class="spec-value">${miles}</div>
+      </div>
+      <div class="spec-cell">
+        <div class="spec-label">Year</div>
+        <div class="spec-value">${v.year || '—'}</div>
+      </div>
+      <div class="spec-cell">
+        <div class="spec-label">Location</div>
+        <div class="spec-value">${v.location || '—'}</div>
+      </div>
+      <div class="spec-cell">
+        <div class="spec-label">Status</div>
+        <div class="spec-value">${badge.label}</div>
+      </div>
+    </div>
+
+    <div class="vin-block">
+      <span class="vin-label">VIN</span>
+      <span class="vin-code">${v.vin}</span>
+      <button class="vin-copy" id="vin-btn" onclick="copyVIN('${v.vin}')">Copy</button>
+    </div>
+
+    ${tags.length ? `
+    <div class="notes-block">
+      <div class="section-label">Features & notes</div>
+      <div>${tags.map(t => `<span class="notes-tag">${t}</span>`).join('')}</div>
+    </div>` : ''}
+
+    <div class="actions">
+      <a class="btn btn-primary" href="${waLink}" target="_blank">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.859L.057 23.535a.75.75 0 0 0 .916.919l5.733-1.487A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.897 0-3.67-.516-5.192-1.416l-.368-.218-3.814.99.997-3.73-.24-.386A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+        Contact via WhatsApp
+      </a>
+
+      ${picsLink ? `<a class="btn btn-outline" href="${picsLink}" target="_blank">View full gallery ↗</a>` : ''}
+    </div>
+
+    <div class="seller-strip">
+      <div class="seller-avatar">BSM</div>
+      <div>
+        <div class="seller-name">BSM Enterprise</div>
+        <div class="seller-sub">Auto export · Montréal, QC — Licensed dealer</div>
+      </div>
+    </div>
+  `;
+}
+
+// ─── FETCH + FIND VIN ─────────────────────────────────────────────────────────
+async function load() {
+  const params = new URLSearchParams(window.location.search);
+  const targetVIN = (params.get('vin') || '').toUpperCase().trim();
+
+  if (!targetVIN) {
+    document.getElementById('content').innerHTML = `
+      <div class="state-msg"><div class="icon">⚠</div>No VIN specified. <a href="index.html">Back to listings</a></div>`;
+    return;
+  }
+
+  try {
+    const res = await fetch(SHEET_URL);
+    const text = await res.text();
+    const json = JSON.parse(text.replace(/^.*?\(/, '').replace(/\);?\s*$/, ''));
+    const rows = json.table.rows;
+    const cols = json.table.cols.map(c => c.label.toUpperCase().trim());
+
+    const idx = k => cols.findIndex(c => c.includes(k));
+    const iStatut = idx('STATUT'), iLoc = idx('LOCATION'), iVin = idx('VIN'),
+          iUnit = idx('UNIT'), iYear = idx('YEAR'), iMiles = idx('MILES'),
+          iNotes = idx('NOTES'), iPic = idx('PRIME PIC'), iPics = idx('PICS'),
+          iPrice = idx('PRICE');
+
+    const cell = (row, i) => (i >= 0 && row.c[i] && row.c[i].v != null) ? String(row.c[i].v).trim() : '';
+
+    const found = rows.find(row => cell(row, iVin).toUpperCase() === targetVIN);
+
+    if (!found) {
+      document.getElementById('content').innerHTML = `
+        <div class="state-msg"><div class="icon">✕</div>Vehicle not found. <a href="index.html">Back to listings</a></div>`;
+      return;
+    }
+
+    render({
+      statut: cell(found, iStatut),
+      location: cell(found, iLoc),
+      vin: cell(found, iVin),
+      unit: cell(found, iUnit),
+      year: cell(found, iYear),
+      miles: cell(found, iMiles),
+      notes: cell(found, iNotes),
+      prime_pic: cell(found, iPic),
+      pics: cell(found, iPics),
+      price: cell(found, iPrice),
+    });
+
+  } catch (e) {
+    document.getElementById('content').innerHTML = `
+      <div class="state-msg"><div class="icon">⚠</div>Error loading data. Check your Sheet ID configuration.</div>`;
+    console.error(e);
+  }
+}
+
+load();
+</script>
+</body>
+</html>
