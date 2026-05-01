@@ -70,9 +70,9 @@
   @keyframes popIn   { from { transform: scale(0.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   .modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 10px auto 0; }
   @media (min-width: 660px) { .modal-handle { display: none; } }
-  .modal-img { width: 100%; height: 240px; background: #ECEAE5; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+  .modal-img { width: 100%; height: 280px; background: #ECEAE5; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
   @media (min-width: 660px) { .modal-img { border-radius: 20px 20px 0 0; } }
-  .modal-img img { width: 100%; height: 100%; object-fit: cover; }
+  .modal-img img { width: 100%; height: 100%; object-fit: contain; background: #1A1814; }
   .close-btn { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 50%; background: rgba(0,0,0,0.45); border: none; cursor: pointer; color: #fff; font-size: 16px; display: flex; align-items: center; justify-content: center; z-index: 10; }
   .modal-body { padding: 20px 20px 40px; }
   @media (min-width: 480px) { .modal-body { padding: 24px 28px 36px; } }
@@ -150,7 +150,7 @@
           <div class="vin-value" id="modal-vin"></div>
           <button class="vin-copy" id="vin-copy-btn" onclick="copyVin()">Copy</button>
         </div>
-        <div class="vin-hint">Tap Copy · Use for Carfax lookup</div>
+        <div class="vin-hint">Tap Copy</div>
       </div>
       <div class="modal-specs" id="modal-specs"></div>
       <div class="modal-actions" id="modal-actions"></div>
@@ -267,7 +267,7 @@ function openModal(i) {
     sp.map(s=>`<span class="modal-spec">${s}</span>`).join('');
 
   const carfaxNote = t.vin
-    ? `<p style="font-size:12px;color:var(--muted);margin-top:12px;font-family:var(--font);">⚠️ Buyer is responsible for Carfax verification.</p>`
+    ? `<p style="font-size:12px;color:var(--muted);margin-top:12px;font-family:var(--font);">Please verify Carfax before purchase.</p>`
     : '';
   document.getElementById('modal-actions').innerHTML = (hasPics
     ? `<a class="btn-primary" href="${t.pics}" target="_self">📷 View all photos</a>`
