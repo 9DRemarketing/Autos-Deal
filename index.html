@@ -71,24 +71,10 @@
   @keyframes popIn   { from { transform: scale(0.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   .modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 10px auto 0; }
   @media (min-width: 660px) { .modal-handle { display: none; } }
-  .modal-img { width: 100%; height: 380px; background: #ECEAE5; position: relative; overflow: hidden; }
+  .modal-img { width: 100%; height: 380px; background: #ECEAE5; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
   @media (min-width: 660px) { .modal-img { border-radius: 20px 20px 0 0; } }
-  .car-track { position: absolute; inset: 0; }
-  .car-track img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.28s ease; pointer-events: none; }
-  .car-track img.active { opacity: 1; pointer-events: auto; }
-  .car-no-photo { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
-  .car-no-photo span { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .modal-img img { width: 100%; height: 100%; object-fit: cover; }
   .close-btn { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 50%; background: rgba(0,0,0,0.45); border: none; cursor: pointer; color: #fff; font-size: 16px; display: flex; align-items: center; justify-content: center; z-index: 10; }
-  .car-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 38px; height: 38px; border-radius: 50%; background: rgba(0,0,0,0.42); border: none; color: #fff; font-size: 22px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
-  .car-arrow:hover { background: rgba(0,0,0,0.65); }
-  .car-arrow.hidden { display: none; }
-  .car-prev { left: 10px; }
-  .car-next { right: 10px; }
-  .car-bottom { position: absolute; bottom: 0; left: 0; right: 0; padding: 10px 14px; background: linear-gradient(transparent, rgba(0,0,0,0.45)); display: flex; align-items: center; justify-content: space-between; z-index: 9; }
-  .car-dots { display: flex; gap: 5px; flex-wrap: wrap; max-width: 70%; }
-  .car-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.45); border: none; cursor: pointer; padding: 0; transition: all 0.15s; flex-shrink: 0; }
-  .car-dot.active { background: #fff; transform: scale(1.3); }
-  .car-counter { font-size: 12px; color: rgba(255,255,255,0.85); font-family: var(--mono); white-space: nowrap; }
   .modal-body { padding: 20px 20px 40px; }
   @media (min-width: 480px) { .modal-body { padding: 24px 28px 36px; } }
   .modal-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
@@ -155,14 +141,7 @@
   <div class="modal" id="modal">
     <div class="modal-handle"></div>
     <div class="modal-img" id="modal-img">
-      <div class="car-track" id="car-track"></div>
       <button class="close-btn" onclick="closeModal()">✕</button>
-      <button class="car-arrow car-prev hidden" id="car-prev" onclick="carMove(-1)">‹</button>
-      <button class="car-arrow car-next hidden" id="car-next" onclick="carMove(1)">›</button>
-      <div class="car-bottom" id="car-bottom" style="display:none">
-        <div class="car-dots" id="car-dots"></div>
-        <div class="car-counter" id="car-counter"></div>
-      </div>
     </div>
     <div class="modal-body">
       <div class="modal-head">
@@ -208,134 +187,13 @@ function getStatus(statut, location) {
   return { key:'pending', label, cls:'pill-blue' };
 }
 
-const CLOUD_NAME = 'diqjtg1m8';
-
 function imgUrl(cell) {
   if (!cell) return null;
-  if (cell.includes('res.cloudinary.com')) {
-    return cell.includes('q_auto') ? cell : cell.replace('/upload/', '/upload/w_1200,q_auto,f_auto/');
-  }
   if (/^https?:\/\/.+\.(jpg|jpeg|png|webp|gif)/i.test(cell)) return cell;
   const m = cell.match(/\/d\/([A-Za-z0-9_-]+)/);
   if (m) return `https://drive.google.com/uc?export=view&id=${m[1]}`;
   return null;
 }
-
-// Fetch all photos tagged with VIN from Cloudinary
-async function fetchCloudinaryPhotos(vin) {
-  if (!vin) return [];
-  try {
-    const res = await fetch(`https://res.cloudinary.com/${CLOUD_NAME}/image/list/${vin}.json`);
-    if (!res.ok) return [];
-    const data = await res.json();
-    return (data.resources || []).map(r =>
-      `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_1200,q_auto,f_auto/${r.public_id}.${r.format}`
-    );
-  } catch { return []; }
-}
-
-// Fallback: parse comma-separated URLs from PICS column
-function parsePicsFallback(picsCell, primePic) {
-  const urls = [], seen = new Set();
-  const add = (u) => { const r = imgUrl(u && u.trim()); if (r && !seen.has(r)) { seen.add(r); urls.push(r); } };
-  if (primePic) add(primePic);
-  if (picsCell) picsCell.split(',').forEach(add);
-  return urls;
-}
-
-// ── Carousel ────────────────────────────────────────────────────
-let carPhotos = [], carIdx = 0;
-let touchStartX = 0, touchStartY = 0;
-
-function carInit(photos) {
-  carPhotos = photos;
-  carIdx = 0;
-  const track = document.getElementById('car-track');
-  const dotsEl = document.getElementById('car-dots');
-  const bottom = document.getElementById('car-bottom');
-
-  if (!photos.length) {
-    track.innerHTML = `<div class="car-no-photo"><svg width="64" height="36" viewBox="0 0 90 50" fill="none"><rect x="2" y="20" width="86" height="22" rx="3" fill="#1A1814"/><rect x="30" y="8" width="40" height="16" rx="3" fill="#1A1814"/><circle cx="18" cy="44" r="6" fill="#1A1814"/><circle cx="72" cy="44" r="6" fill="#1A1814"/></svg><span>No photo</span></div>`;
-    dotsEl.innerHTML = '';
-    bottom.style.display = 'none';
-    document.getElementById('car-prev').classList.add('hidden');
-    document.getElementById('car-next').classList.add('hidden');
-    return;
-  }
-
-  // Build slides (lazy: set src only when near)
-  track.innerHTML = photos.map((url, i) =>
-    `<img id="cimg${i}" src="${i === 0 ? url : ''}" data-src="${url}" alt="" class="${i===0?'active':''}" loading="lazy">`
-  ).join('');
-
-  // Dots (max 20 visible)
-  if (photos.length > 1) {
-    dotsEl.innerHTML = photos.map((_,i) =>
-      `<button class="car-dot${i===0?' active':''}" onclick="carGoto(${i})"></button>`
-    ).join('');
-    bottom.style.display = 'flex';
-  } else {
-    dotsEl.innerHTML = '';
-    bottom.style.display = 'none';
-  }
-
-  carUpdateUI();
-
-  // Touch swipe
-  const imgEl = document.getElementById('modal-img');
-  imgEl.addEventListener('touchstart', e => {
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-  }, { passive: true });
-  imgEl.addEventListener('touchend', e => {
-    const dx = e.changedTouches[0].clientX - touchStartX;
-    const dy = e.changedTouches[0].clientY - touchStartY;
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) carMove(dx < 0 ? 1 : -1);
-  }, { passive: true });
-}
-
-function carPreload(i) {
-  if (i < 0 || i >= carPhotos.length) return;
-  const el = document.getElementById(`cimg${i}`);
-  if (el && !el.src) el.src = el.dataset.src;
-}
-
-function carGoto(i) {
-  if (i < 0 || i >= carPhotos.length) return;
-  const prev = carIdx;
-  carIdx = i;
-  // Activate new slide
-  const imgs = document.querySelectorAll('#car-track img');
-  imgs.forEach((el, idx) => el.classList.toggle('active', idx === carIdx));
-  // Ensure src loaded
-  const cur = document.getElementById(`cimg${carIdx}`);
-  if (cur && !cur.src) cur.src = cur.dataset.src;
-  // Preload neighbours
-  carPreload(carIdx - 1);
-  carPreload(carIdx + 1);
-  carUpdateUI();
-}
-
-function carMove(dir) { carGoto(carIdx + dir); }
-
-function carUpdateUI() {
-  const n = carPhotos.length;
-  // Arrows
-  document.getElementById('car-prev').classList.toggle('hidden', n <= 1 || carIdx === 0);
-  document.getElementById('car-next').classList.toggle('hidden', n <= 1 || carIdx === n - 1);
-  // Dots
-  document.querySelectorAll('.car-dot').forEach((d, i) => d.classList.toggle('active', i === carIdx));
-  // Counter
-  if (n > 1) document.getElementById('car-counter').textContent = `${carIdx + 1} / ${n}`;
-}
-
-// Keyboard nav
-document.addEventListener('keydown', e => {
-  if (!document.getElementById('overlay').classList.contains('open')) return;
-  if (e.key === 'Escape')     closeModal();
-  if (e.key === 'ArrowLeft')  carMove(-1);
-  if (e.key === 'ArrowRight') carMove(1);
-});
 
 function fmtPrice(r) {
   if (!r) return '—';
@@ -384,45 +242,26 @@ function cardHTML(t, i) {
   </div>`;
 }
 
-async function openModal(i) {
+function openModal(i) {
   const t  = allTrucks[i];
   const st = getStatus(t.statut, t.location);
+  const im = imgUrl(t.primePic);
   const sp = parseSpecs(t.notes);
-
-  // Show modal immediately with spinner while photos load
-  document.getElementById('overlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
-  setTimeout(() => { document.getElementById('modal').scrollTop = 0; }, 10);
-
-  // Init carousel with spinner
-  const track = document.getElementById('car-track');
-  track.innerHTML = '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><div class="spinner"></div></div>';
-  document.getElementById('car-dots').innerHTML = '';
-  document.getElementById('car-bottom').style.display = 'none';
-  document.getElementById('car-prev').classList.add('hidden');
-  document.getElementById('car-next').classList.add('hidden');
-
-  // Fetch photos: try Cloudinary tag (VIN) first, fallback to PICS column
-  let photos = await fetchCloudinaryPhotos(t.vin);
-  if (!photos.length) photos = parsePicsFallback(t.pics, t.primePic);
-  carInit(photos);
+  const hasPics = t.pics && /^https?:\/\//i.test(t.pics);
 
   const imgEl = document.getElementById('modal-img');
-  document.getElementById('car-track').querySelectorAll('.sold-overlay').forEach(e => e.remove());
-  if (String(t.statut || '').toUpperCase().startsWith('SOLD')) {
-    const ov = document.createElement('div');
-    ov.className = 'sold-overlay';
-    ov.style.cssText = 'position:absolute;inset:0;background:rgba(153,27,27,0.65);display:flex;align-items:center;justify-content:center;z-index:5;pointer-events:none;';
-    ov.innerHTML = '<div style="transform:rotate(-20deg);background:#B91C1C;color:#fff;font-size:32px;font-weight:800;letter-spacing:6px;padding:10px 40px;border-top:4px solid #fff;border-bottom:4px solid #fff;">SOLD</div>';
-    imgEl.appendChild(ov);
+  imgEl.innerHTML = `<button class="close-btn" onclick="closeModal()">✕</button>`;
+  if (im) {
+    const el = document.createElement('img');
+    el.src = im; el.alt = '';
+    el.onerror = () => { el.remove(); };
+    imgEl.insertBefore(el, imgEl.firstChild);
   }
-
-  // Status pill
-  let pill = imgEl.querySelector('.modal-status-pill');
-  if (!pill) { pill = document.createElement('span'); pill.className = 'pill modal-status-pill'; pill.style.cssText = 'position:absolute;top:12px;left:12px;z-index:6;'; imgEl.appendChild(pill); }
-  pill.className = `pill ${st.cls} modal-status-pill`;
-  pill.style.cssText = 'position:absolute;top:12px;left:12px;z-index:6;';
-  pill.textContent = st.label;
+  const pillEl = document.createElement('span');
+  pillEl.className = `pill ${st.cls}`;
+  pillEl.style.cssText = 'position:absolute;top:12px;left:12px;';
+  pillEl.textContent = st.label;
+  imgEl.appendChild(pillEl);
 
   document.getElementById('modal-year').textContent  = t.year || '';
   document.getElementById('modal-title').textContent = t.unit || '—';
@@ -441,14 +280,13 @@ async function openModal(i) {
   const carfaxNote = t.vin
     ? `<p style="font-size:12px;color:var(--muted);margin-top:12px;font-family:var(--font);">Please verify Carfax before purchase.</p>`
     : '';
+  document.getElementById('modal-actions').innerHTML = (hasPics
+    ? `<a class="btn-primary" href="${t.pics}" target="${window.innerWidth >= 660 ? '_blank' : '_self'}">📷 View all photos</a>`
+    : `<span class="btn-primary btn-disabled">No photos yet</span>`) + carfaxNote;
 
-  // If PICS is an external link (Google Photos, etc.) and not used in carousel → show button
-  const picsIsExternalLink = t.pics && /^https?:\/\//i.test(t.pics) && !photos.some(p => p === imgUrl(t.pics));
-  const picsBtn = picsIsExternalLink
-    ? `<a class="btn-primary" href="${t.pics}" target="_blank">📷 View all photos</a>`
-    : '';
-
-  document.getElementById('modal-actions').innerHTML = picsBtn + carfaxNote;
+  document.getElementById('overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(()=>{ document.getElementById('modal').scrollTop = 0; }, 10);
 }
 
 function copyVin() {
@@ -470,6 +308,7 @@ function copyVin() {
 
 function overlayClick(e) { if (e.target === document.getElementById('overlay')) closeModal(); }
 function closeModal() { document.getElementById('overlay').classList.remove('open'); document.body.style.overflow = ''; }
+document.addEventListener('keydown', e => { if (e.key==='Escape') closeModal(); });
 
 function render(list) {
   const el = document.getElementById('content');
