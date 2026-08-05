@@ -217,6 +217,10 @@ function fmtMiles(r) {
   return isNaN(n) ? '' : n.toLocaleString('en-US') + ' mi';
 }
 
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 function parseSpecs(notes) {
   if (!notes) return [];
   return notes.split(/\n|\r|\\n/)
@@ -241,7 +245,7 @@ function cardHTML(t, i) {
         <span class="card-title">${t.unit||'—'}</span>
       </div>
       ${t.vin ? `<div class="card-vin">VIN ···${t.vin.slice(-8)}</div>` : ''}
-      ${sp.length ? `<div class="specs">${sp.map(s=>`<span class="spec-tag">${s}</span>`).join('')}</div>` : ''}
+      ${sp.length ? `<div class="specs">${sp.map(s=>`<span class="spec-tag">${escHtml(s)}</span>`).join('')}</div>` : ''}
       <div class="card-footer">
         <div>
           <div class="price">${fmtPrice(t.price)}</div>
@@ -286,7 +290,7 @@ function openModal(i) {
   copyBtn._vin = t.vin || '';
 
   document.getElementById('modal-specs').innerHTML =
-    sp.map(s=>`<span class="modal-spec">${s}</span>`).join('');
+    sp.map(s=>`<span class="modal-spec">${escHtml(s)}</span>`).join('');
 
   const carfaxNote = t.vin
     ? `<p style="font-size:12px;color:var(--muted);margin-top:12px;font-family:var(--font);">Please verify Carfax before purchase.</p>`
