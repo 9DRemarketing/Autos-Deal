@@ -219,7 +219,10 @@ function fmtMiles(r) {
 
 function parseSpecs(notes) {
   if (!notes) return [];
-  return notes.split(/[|\n\\n\r]+/).map(s=>s.trim()).filter(s=>s&&s.length<50).slice(0,6);
+  return notes.split(/\n|\r|\\n/)
+    .map(s => s.trim())
+    .filter(s => s && s.length > 0 && s.length < 60)
+    .slice(0, 6);
 }
 
 function cardHTML(t, i) {
