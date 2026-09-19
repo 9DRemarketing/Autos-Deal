@@ -170,7 +170,7 @@ let allTrucks = [];
 let activeTab = 'available';
 
 function isPurchased(t) {
-  return String(t.statut || '').toUpperCase().trim().startsWith('PURCHASED');
+  return String(t.statut || '').toUpperCase().trim().startsWith('SOLD');
 }
 
 function switchTab(tab) {
